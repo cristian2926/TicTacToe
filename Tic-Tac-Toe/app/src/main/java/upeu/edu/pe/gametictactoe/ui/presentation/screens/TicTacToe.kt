@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +36,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import upeu.edu.pe.gametictactoe.api.RetrofitClient
 import upeu.edu.pe.gametictactoe.model.Game
-
 
 
 @Composable
@@ -94,8 +94,6 @@ fun PlayerInputScreen(
         }
     }
 }
-
-
 // Función para crear un nuevo juego en el backend
 fun createNewGame(playerX: String, playerO: String, onGameCreated: (Game?, String?) -> Unit) {
     val newGame = Game(0, playerX, playerO, "_________", false, null)
@@ -119,6 +117,69 @@ fun createNewGame(playerX: String, playerO: String, onGameCreated: (Game?, Strin
 }
 
 @Composable
+fun TicTacToeBoard(game: Game, playerX: String, playerO: String, onCancel: () -> Unit) {
+    var board by remember { mutableStateOf(game.board.toCharArray()) }
+    var currentPlayer by remember { mutableStateOf("X") }
+    var result by remember { mutableStateOf<String?>(null) }
+    var gameFinished by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Mostrar el turno actual o el resultado
+        Text(
+            text = result?.let { if (it == "EMPATE") "Empate" else "Ganador: $it" }
+                ?: "Turno del jugador ${if (currentPlayer == "X") playerX else playerO}",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        // Mostrar el tablero
+        Board(board = board, onCellClick = { index ->
+            if (board[index] == '_' && !gameFinished) {
+                board[index] = currentPlayer.single()
+                currentPlayer = if (currentPlayer == "X") "O" else "X"
+                checkWinner(board, game.id, playerX, playerO) { gameResult ->
+                    if (gameResult != null) {
+                        result = gameResult
+                        gameFinished = true
+                    }
+                }
+            }
+        })
+
+        // Botón de Reiniciar Juego
+        if (gameFinished) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                board = CharArray(9) { '_' }
+                currentPlayer = "X"
+                result = null
+                gameFinished = false
+            }) {
+                Text("Reiniciar Juego")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Botón de Anular que ejecuta el callback onCancel
+        Button(
+            onClick = {
+                onCancel() // Llamamos al callback que nos llevará a la pantalla de inicio
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        ) {
+            Text("Anular")
+        }
+    }
+}
+
+/*@Composable
 fun TicTacToeBoard(game: Game, playerX: String, playerO: String) {
     var board by remember { mutableStateOf(game.board.toCharArray()) }
     var currentPlayer by remember { mutableStateOf("X") }
@@ -132,9 +193,10 @@ fun TicTacToeBoard(game: Game, playerX: String, playerO: String) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Mostrar el turno actual con los nombres de los jugadores
         Text(
             text = result?.let { if (it == "EMPATE") "Empate" else "Ganador: $it" }
-                ?: "Turno del jugador $currentPlayer",
+                ?: "Turno del jugador ${if (currentPlayer == "X") playerX else playerO}",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 24.dp)
         )
@@ -163,10 +225,9 @@ fun TicTacToeBoard(game: Game, playerX: String, playerO: String) {
                 Text("Reiniciar Juego")
             }
         }
+
     }
-}
-
-
+}*/
 
 @Composable
 fun Board(board: CharArray, onCellClick: (Int) -> Unit) {
@@ -266,27 +327,54 @@ fun updateGameWinner(gameId: Long, winner: String) {
         })
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     var gameCreated by remember { mutableStateOf<Game?>(null) }
-    var gameStarted by remember { mutableStateOf(false) } // Variable para controlar el estado del juego
+    var gameStarted by remember { mutableStateOf(false) }
     var playerX by remember { mutableStateOf("") }
     var playerO by remember { mutableStateOf("") }
 
-    // Aquí decides si mostrar el tablero o la pantalla de entrada de nombres
+    // Muestra la pantalla del juego o la pantalla de entrada de nombres
     if (gameStarted) {
-        TicTacToeBoard(gameCreated!!, playerX, playerO) // Muestra el tablero si el juego ha comenzado
+        TicTacToeBoard(gameCreated!!, playerX, playerO, onCancel = {
+            // Lógica cuando se anula el juego: volvemos a la pantalla de inicio
+            gameStarted = false
+            gameCreated = null
+            playerX = ""
+            playerO = ""
+        })
     } else {
         PlayerInputScreen(
             onGameCreated = { game, pX, pO ->
                 gameCreated = game
                 playerX = pX
                 playerO = pO
-                gameStarted = true // Cambia a la pantalla del tablero
+                gameStarted = true
             }
         )
     }
 }
+/*@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    var gameCreated by remember { mutableStateOf<Game?>(null) }
+    var gameStarted by remember { mutableStateOf(false) }
+    var playerX by remember { mutableStateOf("") }
+    var playerO by remember { mutableStateOf("") }
+
+    // Mostrar la pantalla de entrada de jugadores o el tablero
+    if (gameStarted) {
+        TicTacToeBoard(gameCreated!!, playerX, playerO) // Mostrar el tablero
+    } else {
+        PlayerInputScreen(
+            onGameCreated = { game, pX, pO ->
+                gameCreated = game
+                playerX = pX
+                playerO = pO
+                gameStarted = true // Cambiar a la pantalla del tablero
+            }
+        )
+    }
+}*/
+

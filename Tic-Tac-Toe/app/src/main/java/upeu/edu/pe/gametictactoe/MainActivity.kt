@@ -133,7 +133,7 @@ fun ScaffoldExample() {
             You have pressed the floating action button $presses times.
         """.trimIndent(),
             )*/
-            var gameCreated by remember { mutableStateOf<Game?>(null) }
+            /*var gameCreated by remember { mutableStateOf<Game?>(null) }
             var gameStarted by remember { mutableStateOf(false) } // Variable para controlar el estado del juego
             var playerX by remember { mutableStateOf("") }
             var playerO by remember { mutableStateOf("") }
@@ -150,7 +150,8 @@ fun ScaffoldExample() {
                         gameStarted = true // Cambia a la pantalla del tablero
                     }
                 )
-            }
+            }*/
+            DefaultPreview()
             // Button(onClick = {}) {
             //Text(text = "A")
 
